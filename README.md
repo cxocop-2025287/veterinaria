@@ -312,6 +312,38 @@ El archivo [`data.sql`](file:///C:/2025287/veterinaria/src/main/resources/data.s
 * **URL**: `/api/v1/expedientes/mascota/{mascotaId}`
 * **Permisos**: `VET`, `CLIENTE`, `ADMIN` (CLIENTE solo puede consultar sus mascotas)
 
+### 👥 Usuarios y Gestión Administrativa (`/api/v1/usuarios`)
+
+#### 1. Crear Veterinario (Solo ADMIN)
+* **Método**: `POST`
+* **URL**: `/api/v1/usuarios/veterinarios`
+* **Permisos**: `ADMIN`
+* **Body Request**:
+  ```json
+  {
+    "nombre": "Dra. Laura Morales",
+    "telefono": "555-4321",
+    "email": "lmorales@veterinaria.com",
+    "password": "VetPassword123*",
+    "rol": "VET"
+  }
+  ```
+* **Response (201 Created)**:
+  ```json
+  {
+    "id": 4,
+    "nombre": "Dra. Laura Morales",
+    "telefono": "555-4321",
+    "email": "lmorales@veterinaria.com",
+    "rol": "VET"
+  }
+  ```
+
+#### 2. Consultar Lista de Veterinarios
+* **Método**: `GET`
+* **URL**: `/api/v1/usuarios/veterinarios`
+* **Permisos**: `ADMIN`, `CLIENTE`, `VET`
+
 ---
 
 ## 🏗️ 8. Estructura del Proyecto
@@ -324,54 +356,23 @@ veterinaria/
 │       └── maven-wrapper.properties
 ├── pom.xml
 ├── README.md
+├── test-veterinaria.sh
+├── test-api1.sh
 ├── mvnw
 ├── mvnw.cmd
 └── src/
     ├── main/
     │   ├── java/
     │   │   └── org/carlosxocop/veterinaria/
-    │   │       ├── config/
-    │   │       ├── controller/
-    │   │       │   ├── AuthController.java
-    │   │       │   ├── CitaController.java
-    │   │       │   ├── ExpedienteController.java
-    │   │       │   └── MascotaController.java
-    │   │       ├── dto/
-    │   │       │   ├── auth/ (RegisterRequest, LoginRequest, AuthResponse)
-    │   │       │   ├── cita/ (CitaRequest, CitaResponse)
-    │   │       │   ├── error/ (ErrorResponse)
-    │   │       │   ├── expediente/ (ExpedienteRequest, ExpedienteResponse)
-    │   │       │   └── mascota/ (MascotaRequest, MascotaResponse)
-    │   │       ├── entity/
-    │   │       │   ├── CitaMedica.java
-    │   │       │   ├── ExpedienteClinico.java
-    │   │       │   ├── Mascota.java
-    │   │       │   └── Usuario.java
-    │   │       ├── enums/
-    │   │       │   ├── Especie.java
-    │   │       │   ├── EstadoCita.java
-    │   │       │   └── Rol.java
-    │   │       ├── exception/
-    │   │       │   ├── BusinessException.java
-    │   │       │   ├── ConflictException.java
-    │   │       │   ├── GlobalExceptionHandler.java
-    │   │       │   ├── ResourceNotFoundException.java
-    │   │       │   └── UnauthorizedException.java
-    │   │       ├── repository/
-    │   │       │   ├── CitaMedicaRepository.java
-    │   │       │   ├── ExpedienteClinicoRepository.java
-    │   │       │   ├── MascotaRepository.java
-    │   │       │   └── UsuarioRepository.java
-    │   │       ├── security/
-    │   │       │   ├── CustomUserDetailsService.java
-    │   │       │   ├── JwtAuthenticationFilter.java
-    │   │       │   ├── JwtService.java
-    │   │       │   └── SecurityConfig.java
-    │   │       ├── service/
-    │   │       │   ├── AuthService.java & AuthServiceImpl.java
-    │   │       │   ├── CitaService.java & CitaServiceImpl.java
-    │   │       │   ├── ExpedienteService.java & ExpedienteServiceImpl.java
-    │   │       │   └── MascotaService.java & MascotaServiceImpl.java
+    │   │       ├── config/ (DataInitializer.java)
+    │   │       ├── controller/ (AuthController, CitaController, ExpedienteController, MascotaController, UsuarioController)
+    │   │       ├── dto/ (auth/, cita/, error/, expediente/, mascota/, usuario/)
+    │   │       ├── entity/ (CitaMedica, ExpedienteClinico, Mascota, Usuario)
+    │   │       ├── enums/ (Especie, EstadoCita, Rol)
+    │   │       ├── exception/ (BusinessException, ConflictException, GlobalExceptionHandler, ResourceNotFoundException, UnauthorizedException)
+    │   │       ├── repository/ (CitaMedicaRepository, ExpedienteClinicoRepository, MascotaRepository, UsuarioRepository)
+    │   │       ├── security/ (CustomUserDetailsService, JwtAuthenticationEntryPoint, JwtAuthenticationFilter, JwtService, SecurityConfig)
+    │   │       ├── service/ (AuthService, CitaService, ExpedienteService, MascotaService, UsuarioService)
     │   │       └── VeterinariaApplication.java
     │   │
     │   └── resources/
@@ -390,45 +391,35 @@ veterinaria/
 
 ## 🧪 9. Casos de Prueba Implementados
 
-La clase [`VeterinariaApplicationTests.java`](file:///C:/2025287/veterinaria/src/test/java/org/carlosxocop/veterinaria/VeterinariaApplicationTests.java) cubre los 15 escenarios requeridos:
+La suite de pruebas en `VeterinariaApplicationTests.java` cubre 18 escenarios:
 
 1. `test1_RegistroCliente`: Registro de cliente público y asignación de rol `CLIENTE`.
-2. `test2_Login`: Autenticación y generación de JWT Bearer token.
-3. `test3_AccesoProtegidoSinJwt`: Rechazo de peticiones sin token (403/401).
+2. `test2_Login`: Autenticación y generación de JWT Bearer token y `accessToken`.
+3. `test3_AccesoProtegidoSinJwt`: Rechazo de peticiones sin token con `401 Unauthorized`.
 4. `test4_AccesoConJwt`: Acceso exitoso con token Bearer válido (200).
-5. `test5_RestriccionRoles`: Restricción de acceso a endpoints de rol superior (403).
-6. `test6_RegistroMascota`: Registro exitoso de mascota asociándola al cliente autenticado.
+5. `test5_RestriccionRoles`: Restricción de acceso a endpoints de rol superior (`403 Forbidden`).
+6. `test6_RegistroMascota`: Registro exitoso de mascota (permite edad 0 para cachorros).
 7. `test7_ConsultaMascotasPropias`: Consulta exclusiva de mascotas del cliente autenticado.
-8. `test8_CreacionCita`: Creación de cita médica con estado inicial `PENDIENTE`.
-9. `test9_ConflictoHorarioVeterinario`: Validación de horario de 30 min y rechazo por solapamiento (409 Conflict).
-10. `test10_LimiteDosCitasPendientesCliente`: Validación de límite de 2 citas pendientes por día (400 Bad Request).
+8. `test8_CreacionCita`: Creación de cita médica con validación de fecha futura.
+9. `test9_ConflictoHorarioVeterinario`: Validación de horario de 30 min y rechazo por solapamiento (`409 Conflict`).
+10. `test10_LimiteDosCitasPendientesCliente`: Validación de límite de 2 citas pendientes por día (`400 Bad Request`).
 11. `test11_CancelacionMasDeDosHoras`: Cancelación exitosa con más de 2 horas de anticipación.
-12. `test12_RechazoCancelacionMenosDeDosHoras`: Rechazo de cancelación con menos de 2 horas (400 Bad Request).
+12. `test12_RechazoCancelacionMenosDeDosHoras`: Rechazo de cancelación con menos de 2 horas (`400 Bad Request`).
 13. `test13_CreacionExpedienteClinico`: Registro de expediente clínico por veterinario.
 14. `test14_CambioEstadoCitaACompletada`: Actualización automática de la cita a `COMPLETADA` tras crear expediente.
 15. `test15_ConsultaHistorialClinico`: Consulta del historial clínico de una mascota por su dueño.
+16. `test16_LoginInvalido`: Rechazo con `401 Unauthorized` ante credenciales incorrectas.
+17. `test17_AdminCreaVeterinario`: Creación dinámica de un nuevo veterinario por `ADMIN`.
+18. `test18_JsonMalformadoDevuelve400`: Manejo limpio de errores de parseo JSON (`400 Bad Request`).
 
 ---
 
-## ⚡ 10. Script de Pruebas Unitarias y Concurrencia (`test-api1.sh`)
+## ⚡ 10. Scripts de Pruebas Bash (`test-veterinaria.sh` / `test-api1.sh`)
 
-El proyecto incluye el script [`test-api1.sh`](file:///C:/2025287/veterinaria/test-api1.sh) para validar el flujo completo de la API y pruebas de estrés/concurrencia.
-
-### Requisitos:
-1. Tener la aplicación corriendo en `http://localhost:8080`.
-2. Terminal **Git Bash**.
-3. Utilidad **`jq`** (`winget install jqlang.jq`).
+El proyecto incluye los scripts `test-veterinaria.sh` y `test-api1.sh` para validar el flujo completo de la API y pruebas de estrés/concurrencia.
 
 ### Ejecución en Git Bash:
 ```bash
-chmod +x test-api1.sh
-./test-api1.sh
+chmod +x test-veterinaria.sh
+./test-veterinaria.sh
 ```
-
-El script ejecuta automáticamente:
-1. Registro de usuario `CLIENTE` (`dueno@veterinaria.com`).
-2. Autenticación de `ADMIN` (`admin@veterinaria.com` / `Admin123*`).
-3. Autenticación de `CLIENTE`.
-4. Registro de mascota (Rol `CLIENTE`).
-5. Validación de control de acceso `403 Forbidden` cuando `CLIENTE` intenta crear expediente.
-6. Prueba de estrés y concurrencia (100 peticiones en 10 hilos paralelos) sobre `GET /api/v1/citas/agenda`.
