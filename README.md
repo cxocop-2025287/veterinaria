@@ -407,3 +407,28 @@ La clase [`VeterinariaApplicationTests.java`](file:///C:/2025287/veterinaria/src
 13. `test13_CreacionExpedienteClinico`: Registro de expediente clínico por veterinario.
 14. `test14_CambioEstadoCitaACompletada`: Actualización automática de la cita a `COMPLETADA` tras crear expediente.
 15. `test15_ConsultaHistorialClinico`: Consulta del historial clínico de una mascota por su dueño.
+
+---
+
+## ⚡ 10. Script de Pruebas Unitarias y Concurrencia (`test-api1.sh`)
+
+El proyecto incluye el script [`test-api1.sh`](file:///C:/2025287/veterinaria/test-api1.sh) para validar el flujo completo de la API y pruebas de estrés/concurrencia.
+
+### Requisitos:
+1. Tener la aplicación corriendo en `http://localhost:8080`.
+2. Terminal **Git Bash**.
+3. Utilidad **`jq`** (`winget install jqlang.jq`).
+
+### Ejecución en Git Bash:
+```bash
+chmod +x test-api1.sh
+./test-api1.sh
+```
+
+El script ejecuta automáticamente:
+1. Registro de usuario `CLIENTE` (`dueno@veterinaria.com`).
+2. Autenticación de `ADMIN` (`admin@veterinaria.com` / `Admin123*`).
+3. Autenticación de `CLIENTE`.
+4. Registro de mascota (Rol `CLIENTE`).
+5. Validación de control de acceso `403 Forbidden` cuando `CLIENTE` intenta crear expediente.
+6. Prueba de estrés y concurrencia (100 peticiones en 10 hilos paralelos) sobre `GET /api/v1/citas/agenda`.

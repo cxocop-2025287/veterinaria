@@ -45,6 +45,7 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
                 .token(token)
+                .accessToken(token)
                 .tipo("Bearer")
                 .rol(guardado.getRol())
                 .email(guardado.getEmail())
@@ -68,6 +69,7 @@ public class AuthServiceImpl implements AuthService {
 
         return AuthResponse.builder()
                 .token(token)
+                .accessToken(token)
                 .tipo("Bearer")
                 .rol(usuario.getRol())
                 .email(usuario.getEmail())
