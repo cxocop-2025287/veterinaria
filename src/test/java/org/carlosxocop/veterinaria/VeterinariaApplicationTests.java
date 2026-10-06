@@ -519,12 +519,96 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("18. JSON malformado devuelve 400 Bad Request en vez de 500")
+    @DisplayName("18. JSON malformado devuelve 400 Bad Request en vez de 500 con código MALFORMED_JSON_OR_ENUM")
     void test18_JsonMalformadoDevuelve400() throws Exception {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"email\": \"invalido\", unclosed json"))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.status").value(400));
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("MALFORMED_JSON_OR_ENUM"));
+    }
+
+    @Test
+    @DisplayName("19. ADMIN crea un nuevo administrador dinámicamente")
+    void test19_AdminCreaAdministrador() throws Exception {
+        UsuarioRequest request = UsuarioRequest.builder()
+                .nombre("Admin Secundario")
+                .telefono("555-7788")
+                .email("admin2@veterinaria.com")
+                .password("AdminPass123*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/usuarios/administradores")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.rol").value("ADMIN"))
+                .andExpect(jsonPath("$.email").value("admin2@veterinaria.com"));
+    }
+
+    @Test
+    @DisplayName("20. CLIENTE consulta sus propias citas médicas (GET /citas/mis-citas)")
+    void test20_ClienteConsultaMisCitas() throws Exception {
+        Mascota mascota = mascotaRepository.save(Mascota.builder()
+                .nombre("Oso")
+                .especie(Especie.PERRO)
+                .cliente(clienteUser)
+                .build());
+
+        citaMedicaRepository.save(CitaMedica.builder()
+                .mascota(mascota)
+                .veterinario(vetUser)
+                .fechaHora(LocalDateTime.now().plusDays(5))
+                .motivo("Vacuna anual")
+                .estado(EstadoCita.PENDIENTE)
+                .build());
+
+        mockMvc.perform(get("/api/v1/citas/mis-citas")
+                        .header("Authorization", clienteToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].mascotaNombre").value("Oso"))
+                .andExpect(jsonPath("$[0].clienteId").value(clienteUser.getId()));
+    }
+
+    @Test
+    @DisplayName("21. Cita con solapamiento permite reagendar si la cita anterior fue CANCELADA")
+    void test21_PermiteCitaSiAnteriorEstaCancelada() throws Exception {
+        Mascota mascota = mascotaRepository.save(Mascota.builder()
+                .nombre("Rex")
+                .especie(Especie.PERRO)
+                .cliente(clienteUser)
+                .build());
+
+        LocalDateTime fechaHora = LocalDateTime.now().plusDays(4).withHour(11).withMinute(0).withSecond(0).withNano(0);
+
+        // Cita cancelada previamente en ese horario
+        citaMedicaRepository.save(CitaMedica.builder()
+                .mascota(mascota)
+                .veterinario(vetUser)
+                .fechaHora(fechaHora)
+                .motivo("Consulta previa cancelada")
+                .estado(EstadoCita.CANCELADA)
+                .build());
+
+        // Nueva cita a la misma hora debe ser permitida
+        CitaRequest request = CitaRequest.builder()
+                .mascotaId(mascota.getId())
+                .veterinarioId(vetUser.getId())
+                .fechaHora(fechaHora)
+                .motivo("Nueva consulta")
+                .build();
+
+        mockMvc.perform(post("/api/v1/citas")
+                        .header("Authorization", clienteToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
     }
 }
+
