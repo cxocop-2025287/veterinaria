@@ -1,7 +1,9 @@
 package org.carlosxocop.veterinaria.dto.cita;
 
+import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,8 +24,10 @@ public class CitaRequest {
     private Long veterinarioId;
 
     @NotNull(message = "La fecha y hora de la cita es obligatoria")
+    @Future(message = "La fecha y hora de la cita debe ser futura")
     private LocalDateTime fechaHora;
 
     @NotBlank(message = "El motivo de la cita es obligatorio")
+    @Size(max = 500, message = "El motivo no puede exceder 500 caracteres")
     private String motivo;
 }
