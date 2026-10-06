@@ -45,7 +45,7 @@ public class CitaServiceImpl implements CitaService {
             throw new UnauthorizedException("Solo puedes agendar citas para tus propias mascotas");
         }
 
-        Usuario veterinario = usuarioRepository.findById(request.getVeterinarioId())
+        Usuario veterinario = usuarioRepository.findByIdWithLock(request.getVeterinarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario no encontrado con id: " + request.getVeterinarioId()));
 
         if (veterinario.getRol() != Rol.VET) {
