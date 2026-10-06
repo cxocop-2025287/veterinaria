@@ -49,6 +49,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    @Transactional
+    public UsuarioResponse crearAdministrador(UsuarioRequest request) {
+        request.setRol(Rol.ADMIN);
+        return crearUsuario(request);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<UsuarioResponse> obtenerVeterinarios() {
         return usuarioRepository.findByRol(Rol.VET)
