@@ -31,6 +31,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error(HttpStatus.NOT_FOUND.getReasonPhrase())
+                .codigo("RESOURCE_NOT_FOUND")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -44,7 +45,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.NOT_FOUND.value())
                 .error(HttpStatus.NOT_FOUND.getReasonPhrase())
-                .message("El recurso solicitado no fue encontrado")
+                .codigo("ENDPOINT_NOT_FOUND")
+                .message("El endpoint o recurso solicitado no existe")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
@@ -57,6 +59,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .codigo("BUSINESS_RULE_VIOLATION")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -71,6 +74,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .codigo("MALFORMED_JSON_OR_ENUM")
                 .message("El cuerpo de la solicitud no es legible o contiene valores inválidos (JSON/Enum/Fecha malformados)")
                 .path(request.getRequestURI())
                 .build();
@@ -84,7 +88,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
-                .message("El parámetro '" + ex.getName() + "' tiene un valor o formato no válido")
+                .codigo("PARAM_TYPE_MISMATCH")
+                .message("El parámetro '" + ex.getName() + "' tiene un formato o tipo no válido")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
@@ -97,7 +102,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.METHOD_NOT_ALLOWED.value())
                 .error(HttpStatus.METHOD_NOT_ALLOWED.getReasonPhrase())
-                .message("Método HTTP " + ex.getMethod() + " no soportado para este endpoint")
+                .codigo("METHOD_NOT_ALLOWED")
+                .message("El método HTTP " + ex.getMethod() + " no está permitido para este endpoint")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body(errorResponse);
@@ -110,6 +116,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.CONFLICT.value())
                 .error(HttpStatus.CONFLICT.getReasonPhrase())
+                .codigo("CONFLICT_ERROR")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -123,6 +130,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.FORBIDDEN.value())
                 .error(HttpStatus.FORBIDDEN.getReasonPhrase())
+                .codigo("FORBIDDEN_RESOURCE")
                 .message(ex.getMessage())
                 .path(request.getRequestURI())
                 .build();
@@ -136,7 +144,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.UNAUTHORIZED.value())
                 .error(HttpStatus.UNAUTHORIZED.getReasonPhrase())
-                .message("Credenciales inválidas")
+                .codigo("INVALID_CREDENTIALS")
+                .message("Credenciales de acceso inválidas")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(errorResponse);
@@ -149,7 +158,8 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.FORBIDDEN.value())
                 .error(HttpStatus.FORBIDDEN.getReasonPhrase())
-                .message("No tienes permisos suficientes para acceder a este recurso")
+                .codigo("ACCESS_DENIED")
+                .message("No tienes permisos suficientes para realizar esta acción")
                 .path(request.getRequestURI())
                 .build();
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
@@ -167,6 +177,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.BAD_REQUEST.value())
                 .error(HttpStatus.BAD_REQUEST.getReasonPhrase())
+                .codigo("VALIDATION_ERROR")
                 .message("Error de validación en los campos enviados")
                 .path(request.getRequestURI())
                 .validaciones(validaciones)
@@ -182,6 +193,7 @@ public class GlobalExceptionHandler {
                 .timestamp(LocalDateTime.now())
                 .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
                 .error(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase())
+                .codigo("INTERNAL_SERVER_ERROR")
                 .message("Ha ocurrido un error inesperado en el servidor")
                 .path(request.getRequestURI())
                 .build();
