@@ -26,7 +26,7 @@ public class Usuario implements UserDetails {
     @Column(nullable = false, length = 100)
     private String nombre;
 
-    @Column(length = 20)
+    @Column(length = 8)
     private String telefono;
 
     @Column(nullable = false, unique = true, length = 100)

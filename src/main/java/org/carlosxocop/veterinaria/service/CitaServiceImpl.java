@@ -45,7 +45,7 @@ public class CitaServiceImpl implements CitaService {
             throw new UnauthorizedException("Solo puedes agendar citas para tus propias mascotas");
         }
 
-        Usuario veterinario = usuarioRepository.findById(request.getVeterinarioId())
+        Usuario veterinario = usuarioRepository.findByIdWithLock(request.getVeterinarioId())
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinario no encontrado con id: " + request.getVeterinarioId()));
 
         if (veterinario.getRol() != Rol.VET) {
@@ -77,7 +77,7 @@ public class CitaServiceImpl implements CitaService {
                 veterinario.getId(),
                 inicioVentana,
                 finVentana,
-                EstadoCita.CANCELADA
+                EstadoCita.PENDIENTE
         );
 
         if (!citasConflicto.isEmpty()) {
@@ -103,6 +103,18 @@ public class CitaServiceImpl implements CitaService {
         LocalDateTime fin = fecha != null ? fecha.atTime(23, 59, 59, 999999999) : null;
 
         return citaMedicaRepository.findAgenda(veterinarioId, inicio, fin)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<CitaResponse> obtenerMisCitas(String currentUserEmail) {
+        Usuario currentUser = usuarioRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con email: " + currentUserEmail));
+
+        return citaMedicaRepository.findByClienteId(currentUser.getId())
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

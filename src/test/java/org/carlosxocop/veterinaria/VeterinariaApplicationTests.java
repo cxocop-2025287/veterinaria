@@ -1,12 +1,12 @@
 package org.carlosxocop.veterinaria;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.carlosxocop.veterinaria.dto.auth.AuthResponse;
 import org.carlosxocop.veterinaria.dto.auth.LoginRequest;
 import org.carlosxocop.veterinaria.dto.auth.RegisterRequest;
 import org.carlosxocop.veterinaria.dto.cita.CitaRequest;
 import org.carlosxocop.veterinaria.dto.expediente.ExpedienteRequest;
 import org.carlosxocop.veterinaria.dto.mascota.MascotaRequest;
+import org.carlosxocop.veterinaria.dto.usuario.UsuarioRequest;
 import org.carlosxocop.veterinaria.entity.CitaMedica;
 import org.carlosxocop.veterinaria.entity.Mascota;
 import org.carlosxocop.veterinaria.entity.Usuario;
@@ -28,7 +28,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.LocalDateTime;
 
@@ -84,15 +83,15 @@ class VeterinariaApplicationTests {
         adminUser = usuarioRepository.save(Usuario.builder()
                 .nombre("Admin General")
                 .email("admin@test.com")
-                .password(passwordEncoder.encode("admin123"))
+                .password(passwordEncoder.encode("Admin123*"))
                 .rol(Rol.ADMIN)
                 .build());
 
         // 1 VET
         vetUser = usuarioRepository.save(Usuario.builder()
-                .nombre("Dr. Veterinario")
+                .nombre("Dr. Roberto Martínez")
                 .email("vet@test.com")
-                .password(passwordEncoder.encode("vet123"))
+                .password(passwordEncoder.encode("Vet123*"))
                 .rol(Rol.VET)
                 .build());
 
@@ -100,7 +99,7 @@ class VeterinariaApplicationTests {
         clienteUser = usuarioRepository.save(Usuario.builder()
                 .nombre("Juan Cliente")
                 .email("cliente@test.com")
-                .password(passwordEncoder.encode("cliente123"))
+                .password(passwordEncoder.encode("Cliente123*"))
                 .rol(Rol.CLIENTE)
                 .build());
 
@@ -124,6 +123,7 @@ class VeterinariaApplicationTests {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.rol").value("CLIENTE"))
                 .andExpect(jsonPath("$.email").value("nuevo@cliente.com"));
     }
@@ -133,7 +133,7 @@ class VeterinariaApplicationTests {
     void test2_Login() throws Exception {
         LoginRequest request = LoginRequest.builder()
                 .email("cliente@test.com")
-                .password("cliente123")
+                .password("Cliente123*")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/login")
@@ -141,15 +141,18 @@ class VeterinariaApplicationTests {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
                 .andExpect(jsonPath("$.tipo").value("Bearer"))
                 .andExpect(jsonPath("$.rol").value("CLIENTE"));
     }
 
     @Test
-    @DisplayName("3. Acceso protegido sin JWT es rechazado (403/401)")
+    @DisplayName("3. Acceso protegido sin JWT es rechazado con 401 Unauthorized")
     void test3_AccesoProtegidoSinJwt() throws Exception {
         mockMvc.perform(get("/api/v1/mascotas/mis-mascotas"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
     }
 
     @Test
@@ -161,21 +164,22 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("5. Restricción de roles (CLIENTE intenta acceder a endpoint exclusivo de VET/ADMIN)")
+    @DisplayName("5. Restricción de roles (CLIENTE intenta acceder a endpoint exclusivo de VET/ADMIN recibe 403)")
     void test5_RestriccionRoles() throws Exception {
         mockMvc.perform(get("/api/v1/citas/agenda")
                         .header("Authorization", clienteToken))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.status").value(403));
     }
 
     @Test
-    @DisplayName("6. Registro de mascota exitoso")
+    @DisplayName("6. Registro de mascota exitoso (permite edad 0 para cachorros)")
     void test6_RegistroMascota() throws Exception {
         MascotaRequest request = MascotaRequest.builder()
                 .nombre("Firulais")
                 .especie(Especie.PERRO)
                 .raza("Labrador")
-                .edad(4)
+                .edad(0)
                 .build();
 
         mockMvc.perform(post("/api/v1/mascotas")
@@ -186,6 +190,7 @@ class VeterinariaApplicationTests {
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.nombre").value("Firulais"))
                 .andExpect(jsonPath("$.especie").value("PERRO"))
+                .andExpect(jsonPath("$.edad").value(0))
                 .andExpect(jsonPath("$.clienteId").value(clienteUser.getId()));
     }
 
@@ -208,7 +213,7 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("8. Creación de cita médica exitosa")
+    @DisplayName("8. Creación de cita médica exitosa con fecha futura")
     void test8_CreacionCita() throws Exception {
         Mascota mascota = mascotaRepository.save(Mascota.builder()
                 .nombre("Max")
@@ -236,7 +241,7 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("9. Conflicto de horario del veterinario (rechaza cita solapada)")
+    @DisplayName("9. Conflicto de horario del veterinario (rechaza cita solapada con 409 Conflict)")
     void test9_ConflictoHorarioVeterinario() throws Exception {
         Mascota mascota = mascotaRepository.save(Mascota.builder()
                 .nombre("Toby")
@@ -272,7 +277,7 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("10. Límite de 2 citas pendientes por cliente para el mismo día")
+    @DisplayName("10. Límite de 2 citas pendientes por cliente para el mismo día (rechazo con 400)")
     void test10_LimiteDosCitasPendientesCliente() throws Exception {
         Mascota mascota = mascotaRepository.save(Mascota.builder()
                 .nombre("Rocky")
@@ -345,7 +350,7 @@ class VeterinariaApplicationTests {
     }
 
     @Test
-    @DisplayName("12. Rechazo de cancelación de cita con menos de 2 horas de anticipación")
+    @DisplayName("12. Rechazo de cancelación de cita con menos de 2 horas de anticipación (400 Bad Request)")
     void test12_RechazoCancelacionMenosDeDosHoras() throws Exception {
         Mascota mascota = mascotaRepository.save(Mascota.builder()
                 .nombre("Coco")
@@ -476,4 +481,134 @@ class VeterinariaApplicationTests {
                 .andExpect(jsonPath("$[0].diagnostico").value("Infección en oído derecho"))
                 .andExpect(jsonPath("$[0].pesoKg").value(15.0));
     }
+
+    @Test
+    @DisplayName("16. Login con contraseña inválida devuelve 401 Unauthorized")
+    void test16_LoginInvalido() throws Exception {
+        LoginRequest request = LoginRequest.builder()
+                .email("cliente@test.com")
+                .password("PasswordIncorrecta")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.status").value(401));
+    }
+
+    @Test
+    @DisplayName("17. ADMIN crea un nuevo veterinario dinámicamente")
+    void test17_AdminCreaVeterinario() throws Exception {
+        UsuarioRequest request = UsuarioRequest.builder()
+                .nombre("Dra. María Lopez")
+                .telefono("555-9988")
+                .email("mlopez@veterinaria.com")
+                .password("VetPass123*")
+                .rol(Rol.VET)
+                .build();
+
+        mockMvc.perform(post("/api/v1/usuarios/veterinarios")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.rol").value("VET"))
+                .andExpect(jsonPath("$.email").value("mlopez@veterinaria.com"));
+    }
+
+    @Test
+    @DisplayName("18. JSON malformado devuelve 400 Bad Request en vez de 500 con código MALFORMED_JSON_OR_ENUM")
+    void test18_JsonMalformadoDevuelve400() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\": \"invalido\", unclosed json"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.codigo").value("MALFORMED_JSON_OR_ENUM"));
+    }
+
+    @Test
+    @DisplayName("19. ADMIN crea un nuevo administrador dinámicamente")
+    void test19_AdminCreaAdministrador() throws Exception {
+        UsuarioRequest request = UsuarioRequest.builder()
+                .nombre("Admin Secundario")
+                .telefono("555-7788")
+                .email("admin2@veterinaria.com")
+                .password("AdminPass123*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/usuarios/administradores")
+                        .header("Authorization", adminToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.rol").value("ADMIN"))
+                .andExpect(jsonPath("$.email").value("admin2@veterinaria.com"));
+    }
+
+    @Test
+    @DisplayName("20. CLIENTE consulta sus propias citas médicas (GET /citas/mis-citas)")
+    void test20_ClienteConsultaMisCitas() throws Exception {
+        Mascota mascota = mascotaRepository.save(Mascota.builder()
+                .nombre("Oso")
+                .especie(Especie.PERRO)
+                .cliente(clienteUser)
+                .build());
+
+        citaMedicaRepository.save(CitaMedica.builder()
+                .mascota(mascota)
+                .veterinario(vetUser)
+                .fechaHora(LocalDateTime.now().plusDays(5))
+                .motivo("Vacuna anual")
+                .estado(EstadoCita.PENDIENTE)
+                .build());
+
+        mockMvc.perform(get("/api/v1/citas/mis-citas")
+                        .header("Authorization", clienteToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].mascotaNombre").value("Oso"))
+                .andExpect(jsonPath("$[0].clienteId").value(clienteUser.getId()));
+    }
+
+    @Test
+    @DisplayName("21. Cita con solapamiento permite reagendar si la cita anterior fue CANCELADA")
+    void test21_PermiteCitaSiAnteriorEstaCancelada() throws Exception {
+        Mascota mascota = mascotaRepository.save(Mascota.builder()
+                .nombre("Rex")
+                .especie(Especie.PERRO)
+                .cliente(clienteUser)
+                .build());
+
+        LocalDateTime fechaHora = LocalDateTime.now().plusDays(4).withHour(11).withMinute(0).withSecond(0).withNano(0);
+
+        // Cita cancelada previamente en ese horario
+        citaMedicaRepository.save(CitaMedica.builder()
+                .mascota(mascota)
+                .veterinario(vetUser)
+                .fechaHora(fechaHora)
+                .motivo("Consulta previa cancelada")
+                .estado(EstadoCita.CANCELADA)
+                .build());
+
+        // Nueva cita a la misma hora debe ser permitida
+        CitaRequest request = CitaRequest.builder()
+                .mascotaId(mascota.getId())
+                .veterinarioId(vetUser.getId())
+                .fechaHora(fechaHora)
+                .motivo("Nueva consulta")
+                .build();
+
+        mockMvc.perform(post("/api/v1/citas")
+                        .header("Authorization", clienteToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNotEmpty())
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+    }
 }
+

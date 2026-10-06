@@ -87,16 +87,16 @@ mvn spring-boot:run
 
 ## 👥 5. Usuarios Iniciales y Roles
 
-El archivo [`data.sql`](file:///C:/2025287/veterinaria/src/main/resources/data.sql) inicializa automáticamente usuarios y mascotas para pruebas:
+El archivo [`data.sql`](file:///C:/2025287/veterinaria/src/main/resources/data.sql) y el componente [`DataInitializer.java`](file:///C:/2025287/veterinaria/src/main/java/org/carlosxocop/veterinaria/config/DataInitializer.java) inicializan automáticamente el usuario Administrador del sistema:
 
 | Rol | Nombre | Email | Contraseña |
 | :--- | :--- | :--- | :--- |
-| `ADMIN` | Administrador del Sistema | `admin@veterinaria.com` | `admin123` |
-| `VET` | Dr. Roberto Martínez | `vet@veterinaria.com` | `vet123` |
-| `CLIENTE` | Carlos Cliente | `cliente@veterinaria.com` | `cliente123` |
+| `ADMIN` | Administrador General | `admin@veterinaria.com` | `Admin123*` |
 
 > [!NOTE]
-> Todas las contraseñas se almacenan cifradas con **BCrypt**.
+> * Los usuarios adicionales con rol `VET` o `ADMIN` son creados dinámicamente por el Administrador mediante los endpoints `POST /api/v1/usuarios/veterinarios` y `POST /api/v1/usuarios/administradores`.
+> * Los usuarios con rol `CLIENTE` se registran a través del endpoint público `POST /api/v1/auth/register`.
+> * Todas las contraseñas se almacenan cifradas con **BCrypt**.
 
 ---
 
@@ -255,20 +255,27 @@ El archivo [`data.sql`](file:///C:/2025287/veterinaria/src/main/resources/data.s
   }
   ```
 
-#### 2. Consultar Agenda de Citas
+#### 2. Consultar Mis Citas (Solo CLIENTE y ADMIN)
+* **Método**: `GET`
+* **URL**: `/api/v1/citas/mis-citas`
+* **Permisos**: `CLIENTE`, `ADMIN`
+* **Descripción**: Retorna exclusivamente la lista de citas agendadas por el cliente actualmente autenticado (obtenido de su token JWT).
+
+#### 3. Consultar Agenda de Citas (Veterinarios y Admins)
 * **Método**: `GET`
 * **URL**: `/api/v1/citas/agenda?fecha=2026-10-15&veterinarioId=2`
 * **Permisos**: `VET`, `ADMIN`
 * **Query Params opcionales**: `fecha` (YYYY-MM-DD), `veterinarioId` (Long)
 
-#### 3. Cancelar Cita
+#### 4. Cancelar Cita
 * **Método**: `PATCH`
 * **URL**: `/api/v1/citas/{id}/cancelar`
 * **Permisos**: `CLIENTE`, `ADMIN`
 * **Reglas**:
-  * Solo puede cancelarse si faltan **más de 2 horas** para la cita programada.
+  * Solo puede cancelarse si faltan **más de 2 horas** para la cita programada (con zona horaria unificada `America/Guatemala`).
   * No se pueden cancelar citas en estado `COMPLETADA` o `CANCELADA`.
   * `CLIENTE` solo puede cancelar sus propias citas.
+  * Al cancelar una cita, el horario queda automáticamente liberado para nuevos agendamientos.
 
 ---
 
@@ -314,121 +321,119 @@ El archivo [`data.sql`](file:///C:/2025287/veterinaria/src/main/resources/data.s
 
 ---
 
-## 🏗️ 8. Estructura del Proyecto
+### 👥 Usuarios y Gestión Administrativa (`/api/v1/usuarios`)
 
-```text
-veterinaria/
-├── .mvn/
-│   ├── jvm.config
-│   └── wrapper/
-│       └── maven-wrapper.properties
-├── pom.xml
-├── README.md
-├── mvnw
-├── mvnw.cmd
-└── src/
-    ├── main/
-    │   ├── java/
-    │   │   └── org/carlosxocop/veterinaria/
-    │   │       ├── config/
-    │   │       ├── controller/
-    │   │       │   ├── AuthController.java
-    │   │       │   ├── CitaController.java
-    │   │       │   ├── ExpedienteController.java
-    │   │       │   └── MascotaController.java
-    │   │       ├── dto/
-    │   │       │   ├── auth/ (RegisterRequest, LoginRequest, AuthResponse)
-    │   │       │   ├── cita/ (CitaRequest, CitaResponse)
-    │   │       │   ├── error/ (ErrorResponse)
-    │   │       │   ├── expediente/ (ExpedienteRequest, ExpedienteResponse)
-    │   │       │   └── mascota/ (MascotaRequest, MascotaResponse)
-    │   │       ├── entity/
-    │   │       │   ├── CitaMedica.java
-    │   │       │   ├── ExpedienteClinico.java
-    │   │       │   ├── Mascota.java
-    │   │       │   └── Usuario.java
-    │   │       ├── enums/
-    │   │       │   ├── Especie.java
-    │   │       │   ├── EstadoCita.java
-    │   │       │   └── Rol.java
-    │   │       ├── exception/
-    │   │       │   ├── BusinessException.java
-    │   │       │   ├── ConflictException.java
-    │   │       │   ├── GlobalExceptionHandler.java
-    │   │       │   ├── ResourceNotFoundException.java
-    │   │       │   └── UnauthorizedException.java
-    │   │       ├── repository/
-    │   │       │   ├── CitaMedicaRepository.java
-    │   │       │   ├── ExpedienteClinicoRepository.java
-    │   │       │   ├── MascotaRepository.java
-    │   │       │   └── UsuarioRepository.java
-    │   │       ├── security/
-    │   │       │   ├── CustomUserDetailsService.java
-    │   │       │   ├── JwtAuthenticationFilter.java
-    │   │       │   ├── JwtService.java
-    │   │       │   └── SecurityConfig.java
-    │   │       ├── service/
-    │   │       │   ├── AuthService.java & AuthServiceImpl.java
-    │   │       │   ├── CitaService.java & CitaServiceImpl.java
-    │   │       │   ├── ExpedienteService.java & ExpedienteServiceImpl.java
-    │   │       │   └── MascotaService.java & MascotaServiceImpl.java
-    │   │       └── VeterinariaApplication.java
-    │   │
-    │   └── resources/
-    │       ├── application.properties
-    │       └── data.sql
-    │
-    └── test/
-        ├── java/
-        │   └── org/carlosxocop/veterinaria/
-        │       └── VeterinariaApplicationTests.java
-        └── resources/
-            └── application-test.properties
-```
+#### 1. Crear Veterinario (Solo ADMIN)
+* **Método**: `POST`
+* **URL**: `/api/v1/usuarios/veterinarios`
+* **Permisos**: `ADMIN`
+* **Body Request**:
+  ```json
+  {
+    "nombre": "Dra. Laura Morales",
+    "telefono": "555-4321",
+    "email": "lmorales@veterinaria.com",
+    "password": "VetPassword123*",
+    "rol": "VET"
+  }
+  ```
+
+#### 2. Crear Administrador (Solo ADMIN)
+* **Método**: `POST`
+* **URL**: `/api/v1/usuarios/administradores`
+* **Permisos**: `ADMIN`
+* **Body Request**:
+  ```json
+  {
+    "nombre": "Admin Secundario",
+    "telefono": "555-7788",
+    "email": "admin2@veterinaria.com",
+    "password": "AdminPassword123*"
+  }
+  ```
+
+#### 3. Consultar Lista de Veterinarios
+* **Método**: `GET`
+* **URL**: `/api/v1/usuarios/veterinarios`
+* **Permisos**: `ADMIN`, `CLIENTE`, `VET`
 
 ---
 
-## 🧪 9. Casos de Prueba Implementados
+## 🛑 8. Catálogo de Códigos de Error
 
-La clase [`VeterinariaApplicationTests.java`](file:///C:/2025287/veterinaria/src/test/java/org/carlosxocop/veterinaria/VeterinariaApplicationTests.java) cubre los 15 escenarios requeridos:
+La API implementa un esquema unificado de respuesta de error:
+
+```json
+{
+  "timestamp": "2026-10-06T11:45:00",
+  "status": 400,
+  "error": "Bad Request",
+  "codigo": "BUSINESS_RULE_VIOLATION",
+  "message": "Solo se pueden cancelar citas con más de 2 horas de anticipación",
+  "path": "/api/v1/citas/5/cancelar"
+}
+```
+
+| Código de Error (`codigo`) | HTTP Status | Descripción |
+| :--- | :--- | :--- |
+| `VALIDATION_ERROR` | `400 Bad Request` | Fallo en validaciones de Jakarta (campos requeridos, email inválido, edad negativa, etc.). |
+| `BUSINESS_RULE_VIOLATION` | `400 Bad Request` | Violación de reglas de negocio (límite de 2 citas pendientes, cancelación < 2h, cita en el pasado, etc.). |
+| `MALFORMED_JSON_OR_ENUM` | `400 Bad Request` | Cuerpo JSON mal estructurado, sintaxis rota o valor de Enum no reconocido (ej. especie inválida). |
+| `PARAM_TYPE_MISMATCH` | `400 Bad Request` | Parámetro de URL o query con tipo de dato incompatible (ej. fecha mal formateada o ID no numérico). |
+| `INVALID_CREDENTIALS` | `401 Unauthorized` | Correo o contraseña incorrectos en el login. |
+| `UNAUTHORIZED` | `401 Unauthorized` | Petición a ruta protegida sin token JWT o con token expirado/inválido. |
+| `ACCESS_DENIED` | `403 Forbidden` | Usuario autenticado pero sin los permisos/rol requeridos para la acción. |
+| `FORBIDDEN_RESOURCE` | `403 Forbidden` | Intento de acceder o modificar recursos pertenecientes a otro usuario (mascotas/citas ajenas). |
+| `RESOURCE_NOT_FOUND` | `404 Not Found` | El recurso solicitado no existe en la base de datos (usuario, mascota, cita, expediente). |
+| `METHOD_NOT_ALLOWED` | `405 Method Not Allowed` | El método HTTP usado no está soportado para ese endpoint. |
+| `CONFLICT_ERROR` | `409 Conflict` | Solapamiento de horario de cita (mismo veterinario en ventana de 30 min) o correo ya registrado. |
+| `INTERNAL_SERVER_ERROR` | `500 Internal Error` | Error inesperado interno en el servidor. |
+
+---
+
+## ⏰ 9. Zona Horaria Unificada
+
+Para prevenir discrepancias y desfases horarios entre el cliente, la aplicación y la base de datos, toda la plataforma opera bajo la zona horaria **`America/Guatemala` (GMT-6)**:
+- **JVM (`VeterinariaApplication.java`)**: Configurada en `@PostConstruct` con `TimeZone.setDefault(TimeZone.getTimeZone("America/Guatemala"))`.
+- **Jackson (`application.properties`)**: `spring.jackson.time-zone=America/Guatemala`.
+- **MySQL Driver (`application.properties`)**: `serverTimezone=America/Guatemala`.
+
+---
+
+## 🧪 10. Casos de Prueba Implementados
+
+La suite de pruebas en `VeterinariaApplicationTests.java` cubre **21 escenarios exhaustivos**:
 
 1. `test1_RegistroCliente`: Registro de cliente público y asignación de rol `CLIENTE`.
-2. `test2_Login`: Autenticación y generación de JWT Bearer token.
-3. `test3_AccesoProtegidoSinJwt`: Rechazo de peticiones sin token (403/401).
+2. `test2_Login`: Autenticación y generación de JWT Bearer token y `accessToken`.
+3. `test3_AccesoProtegidoSinJwt`: Rechazo de peticiones sin token con `401 Unauthorized`.
 4. `test4_AccesoConJwt`: Acceso exitoso con token Bearer válido (200).
-5. `test5_RestriccionRoles`: Restricción de acceso a endpoints de rol superior (403).
-6. `test6_RegistroMascota`: Registro exitoso de mascota asociándola al cliente autenticado.
+5. `test5_RestriccionRoles`: Restricción de acceso a endpoints de rol superior (`403 Forbidden`).
+6. `test6_RegistroMascota`: Registro exitoso de mascota (permite edad 0 para cachorros).
 7. `test7_ConsultaMascotasPropias`: Consulta exclusiva de mascotas del cliente autenticado.
-8. `test8_CreacionCita`: Creación de cita médica con estado inicial `PENDIENTE`.
-9. `test9_ConflictoHorarioVeterinario`: Validación de horario de 30 min y rechazo por solapamiento (409 Conflict).
-10. `test10_LimiteDosCitasPendientesCliente`: Validación de límite de 2 citas pendientes por día (400 Bad Request).
+8. `test8_CreacionCita`: Creación de cita médica con validación de fecha futura.
+9. `test9_ConflictoHorarioVeterinario`: Validación de horario de 30 min y rechazo por solapamiento (`409 Conflict`).
+10. `test10_LimiteDosCitasPendientesCliente`: Validación de límite de 2 citas pendientes por día (`400 Bad Request`).
 11. `test11_CancelacionMasDeDosHoras`: Cancelación exitosa con más de 2 horas de anticipación.
-12. `test12_RechazoCancelacionMenosDeDosHoras`: Rechazo de cancelación con menos de 2 horas (400 Bad Request).
+12. `test12_RechazoCancelacionMenosDeDosHoras`: Rechazo de cancelación con menos de 2 horas (`400 Bad Request`).
 13. `test13_CreacionExpedienteClinico`: Registro de expediente clínico por veterinario.
 14. `test14_CambioEstadoCitaACompletada`: Actualización automática de la cita a `COMPLETADA` tras crear expediente.
 15. `test15_ConsultaHistorialClinico`: Consulta del historial clínico de una mascota por su dueño.
+16. `test16_LoginInvalido`: Rechazo con `401 Unauthorized` ante credenciales incorrectas.
+17. `test17_AdminCreaVeterinario`: Creación dinámica de un nuevo veterinario por `ADMIN`.
+18. `test18_JsonMalformadoDevuelve400`: Manejo limpio de errores de parseo JSON (`400 Bad Request` con código `MALFORMED_JSON_OR_ENUM`).
+19. `test19_AdminCreaAdministrador`: Creación dinámica de un nuevo administrador por `ADMIN`.
+20. `test20_ClienteConsultaMisCitas`: Consulta de citas exclusivas del cliente autenticado (`GET /citas/mis-citas`).
+21. `test21_PermiteCitaSiAnteriorEstaCancelada`: Validación de que citas `CANCELADA` no bloquean nuevos agendamientos en ese horario.
 
 ---
 
-## ⚡ 10. Script de Pruebas Unitarias y Concurrencia (`test-api1.sh`)
+## ⚡ 11. Scripts de Pruebas Bash (`test-veterinaria.sh` / `test-api1.sh`)
 
-El proyecto incluye el script [`test-api1.sh`](file:///C:/2025287/veterinaria/test-api1.sh) para validar el flujo completo de la API y pruebas de estrés/concurrencia.
-
-### Requisitos:
-1. Tener la aplicación corriendo en `http://localhost:8080`.
-2. Terminal **Git Bash**.
-3. Utilidad **`jq`** (`winget install jqlang.jq`).
+El proyecto incluye los scripts `test-veterinaria.sh` y `test-api1.sh` para validar el flujo completo de la API y pruebas de estrés/concurrencia.
 
 ### Ejecución en Git Bash:
 ```bash
-chmod +x test-api1.sh
-./test-api1.sh
+chmod +x test-veterinaria.sh
+./test-veterinaria.sh
 ```
-
-El script ejecuta automáticamente:
-1. Registro de usuario `CLIENTE` (`dueno@veterinaria.com`).
-2. Autenticación de `ADMIN` (`admin@veterinaria.com` / `Admin123*`).
-3. Autenticación de `CLIENTE`.
-4. Registro de mascota (Rol `CLIENTE`).
-5. Validación de control de acceso `403 Forbidden` cuando `CLIENTE` intenta crear expediente.
-6. Prueba de estrés y concurrencia (100 peticiones en 10 hilos paralelos) sobre `GET /api/v1/citas/agenda`.

@@ -9,6 +9,7 @@ import java.util.List;
 public interface CitaService {
     CitaResponse crearCita(CitaRequest request, String currentUserEmail);
     List<CitaResponse> obtenerAgenda(LocalDate fecha, Long veterinarioId);
+    List<CitaResponse> obtenerMisCitas(String currentUserEmail);
     CitaResponse cancelarCita(Long id, String currentUserEmail);
     CitaResponse obtenerPorId(Long id);
 }
