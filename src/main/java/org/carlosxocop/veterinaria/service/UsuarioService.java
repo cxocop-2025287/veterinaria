@@ -8,6 +8,7 @@ import java.util.List;
 public interface UsuarioService {
     UsuarioResponse crearUsuario(UsuarioRequest request);
     UsuarioResponse crearVeterinario(UsuarioRequest request);
+    UsuarioResponse crearAdministrador(UsuarioRequest request);
     List<UsuarioResponse> obtenerVeterinarios();
     List<UsuarioResponse> obtenerTodos();
 }
