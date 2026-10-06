@@ -14,6 +14,8 @@ public class AuthResponse {
 
     private String token;
 
+    private String accessToken;
+
     @Builder.Default
     private String tipo = "Bearer";
 
@@ -22,4 +24,8 @@ public class AuthResponse {
     private String email;
 
     private String nombre;
+
+    public String getAccessToken() {
+        return accessToken != null ? accessToken : token;
+    }
 }
