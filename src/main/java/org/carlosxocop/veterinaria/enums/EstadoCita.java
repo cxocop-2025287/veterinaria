@@ -1,0 +1,7 @@
+package org.carlosxocop.veterinaria.enums;
+
+public enum EstadoCita {
+    PENDIENTE,
+    COMPLETADA,
+    CANCELADA
+}
