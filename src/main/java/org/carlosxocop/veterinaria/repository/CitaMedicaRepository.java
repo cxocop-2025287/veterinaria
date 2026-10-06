@@ -35,7 +35,11 @@ public interface CitaMedicaRepository extends JpaRepository<CitaMedica, Long> {
             @Param("finDia") LocalDateTime finDia
     );
 
-    @Query("SELECT c FROM CitaMedica c WHERE (:vetId IS NULL OR c.veterinario.id = :vetId) " +
+    @Query("SELECT c FROM CitaMedica c " +
+           "JOIN FETCH c.mascota m " +
+           "JOIN FETCH m.cliente cl " +
+           "JOIN FETCH c.veterinario v " +
+           "WHERE (:vetId IS NULL OR c.veterinario.id = :vetId) " +
            "AND (:inicio IS NULL OR c.fechaHora >= :inicio) " +
            "AND (:fin IS NULL OR c.fechaHora <= :fin) " +
            "ORDER BY c.fechaHora ASC")
