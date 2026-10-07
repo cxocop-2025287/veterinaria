@@ -20,7 +20,7 @@ public class DataInitializer implements CommandLineRunner {
     @Override
     public void run(String... args) {
         // Inicializar únicamente el Administrador del Sistema
-        crearUsuarioSiNoExiste("admin@veterinaria.com", "Administrador del Sistema", "555-0101", "Admin123*", Rol.ADMIN);
+        crearUsuarioSiNoExiste("admin@veterinaria.com", "Administrador del Sistema", "55550101", "Admin123*", Rol.ADMIN);
     }
 
     private void crearUsuarioSiNoExiste(String email, String nombre, String telefono, String rawPassword, Rol rol) {
