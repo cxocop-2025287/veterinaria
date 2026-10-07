@@ -115,7 +115,7 @@ class VeterinariaApplicationTests {
                 .nombre("Nuevo Cliente")
                 .telefono("12345678")
                 .email("nuevo@cliente.com")
-                .password("password123")
+                .password("Password123*")
                 .build();
 
         mockMvc.perform(post("/api/v1/auth/register")
@@ -502,7 +502,7 @@ class VeterinariaApplicationTests {
     void test17_AdminCreaVeterinario() throws Exception {
         UsuarioRequest request = UsuarioRequest.builder()
                 .nombre("Dra. María Lopez")
-                .telefono("555-9988")
+                .telefono("55559988")
                 .email("mlopez@veterinaria.com")
                 .password("VetPass123*")
                 .rol(Rol.VET)
@@ -534,7 +534,7 @@ class VeterinariaApplicationTests {
     void test19_AdminCreaAdministrador() throws Exception {
         UsuarioRequest request = UsuarioRequest.builder()
                 .nombre("Admin Secundario")
-                .telefono("555-7788")
+                .telefono("55557788")
                 .email("admin2@veterinaria.com")
                 .password("AdminPass123*")
                 .build();
@@ -609,6 +609,112 @@ class VeterinariaApplicationTests {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").isNotEmpty())
                 .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+    }
+
+    @Test
+    @DisplayName("22. Validación de contraseña rechaza formatos inválidos (sin mayúscula, sin número, sin símbolo o < 8 caracteres)")
+    void test22_ValidacionPasswordInvalida() throws Exception {
+        // Sin símbolo ni mayúscula
+        RegisterRequest req1 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("12345678")
+                .email("test1@val.com")
+                .password("password123")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.password").isNotEmpty());
+
+        // Menos de 8 caracteres
+        RegisterRequest req2 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("12345678")
+                .email("test2@val.com")
+                .password("Ab1*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req2)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.password").isNotEmpty());
+
+        // Sin número
+        RegisterRequest req3 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("12345678")
+                .email("test3@val.com")
+                .password("Password*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req3)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.password").isNotEmpty());
+
+        // Sin símbolo
+        RegisterRequest req4 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("12345678")
+                .email("test4@val.com")
+                .password("Password123")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req4)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.password").isNotEmpty());
+    }
+
+    @Test
+    @DisplayName("23. Validación de teléfono rechaza números que no tengan exactamente 8 dígitos numéricos")
+    void test23_ValidacionTelefonoInvalido() throws Exception {
+        // Con guiones (no solo números)
+        RegisterRequest req1 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("555-1234")
+                .email("test5@val.com")
+                .password("Password123*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req1)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.telefono").isNotEmpty());
+
+        // Menos de 8 dígitos
+        RegisterRequest req2 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("1234567")
+                .email("test6@val.com")
+                .password("Password123*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req2)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.telefono").isNotEmpty());
+
+        // Más de 8 dígitos
+        RegisterRequest req3 = RegisterRequest.builder()
+                .nombre("Test")
+                .telefono("123456789")
+                .email("test7@val.com")
+                .password("Password123*")
+                .build();
+
+        mockMvc.perform(post("/api/v1/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req3)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.validaciones.telefono").isNotEmpty());
     }
 }
 

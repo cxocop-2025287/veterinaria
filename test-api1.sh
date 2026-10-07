@@ -2,7 +2,7 @@
 
 # CONFIGURACIÓN GENERAL
 
-BASE_URL="http://localhost:8080/api/v1"
+BASE_URL="http://localhost:8001/api/v1"
 ADMIN_EMAIL="admin@veterinaria.com"
 ADMIN_PASS="Admin123*"
 CLIENTE_EMAIL="dueno@veterinaria.com"
