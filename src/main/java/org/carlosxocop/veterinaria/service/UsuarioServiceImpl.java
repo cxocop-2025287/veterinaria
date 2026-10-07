@@ -29,12 +29,14 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new ConflictException("El email ya se encuentra registrado: " + emailNormalizado);
         }
 
+        Rol rolAsignado = request.getRol() != null ? request.getRol() : Rol.CLIENTE;
+
         Usuario usuario = Usuario.builder()
                 .nombre(request.getNombre())
                 .telefono(request.getTelefono())
                 .email(emailNormalizado)
                 .password(passwordEncoder.encode(request.getPassword()))
-                .rol(request.getRol())
+                .rol(rolAsignado)
                 .build();
 
         Usuario guardado = usuarioRepository.save(usuario);
